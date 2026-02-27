@@ -7,15 +7,15 @@ import { useState } from "react";
 export default function StudentLogin() {
   const router = useRouter();
   const [form, setForm] = useState({
-    full_name: "",
-    saint_name: "",
-    class_name: "",
-    nganh: "",
+    full_name: "Họ và tên",
+    saint_name: "Tên Thánh",
+    class_name: "Lớp",
+    nganh: "Ngành",
   });
 
   const handleSubmit = async () => {
     try {
-      const res = await api.post("/students/login-or-create", form);
+      const res = await api.post("/students/register", form);
 
       localStorage.setItem("student", JSON.stringify(res.data));
       router.push("/student/qr");

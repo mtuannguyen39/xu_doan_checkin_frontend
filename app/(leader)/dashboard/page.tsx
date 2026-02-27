@@ -9,7 +9,8 @@ export default function LeaderDashboard() {
 
   useEffect(() => {
     const fetchData = async () => {
-      const statRes = await api.get("/stats/overview");
+      const res = await api.get("/statistics/dashboard");
+      const statRes = res.data;
       const classRes = await api.get("/classes");
 
       setStats(statRes.data);

@@ -16,7 +16,7 @@ export default function LoginPage() {
         password,
       });
       localStorage.setItem("token", res.data.token);
-      router.push("/scan");
+      router.push("/dashboard");
     } catch (error) {
       alert("Đăng nhập thất bại!");
     }

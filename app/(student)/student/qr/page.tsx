@@ -13,7 +13,7 @@ export default function StudentQR() {
     }
   }, []);
 
-  if (!student) return <p>Loading...</p>;
+  if (!student) return null;
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-purple-500 to-blue-600 p-4">
@@ -21,11 +21,16 @@ export default function StudentQR() {
         <h2 className="text-xl font-bold text-white mb-2">
           {student.full_name}
         </h2>
+
         <p className="text-white/80 mb-4">
           Lớp {student.class_name} - {student.nganh}
         </p>
 
-        <div className="mt-4 text-white font-semibold">ID: {student.id}</div>
+        <div className="bg-white p-4 rounded-xl inline-block">
+          <QRCodeCanvas value={student.qr_code} size={220} />
+        </div>
+
+        <p className="mt-4 text-white font-semibold">ID: {student.id}</p>
       </div>
     </div>
   );

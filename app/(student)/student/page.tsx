@@ -9,7 +9,7 @@ export default function StudentPage() {
 
   useEffect(() => {
     const fetchStudent = async () => {
-      const res = await api.get("/students/me");
+      const res = await api.get("/students");
       setStudent(res.data);
     };
     fetchStudent();
