@@ -12,6 +12,22 @@ const NGANH_OPTIONS = [
   "Dự Trưởng",
 ];
 
+const CLASS_OPTIONS = [
+  "Khai tâm 1",
+  "Khai tâm 2",
+  "Rước lễ 1",
+  "Rước lễ 2",
+  "Thêm sức 1",
+  "Thêm sức 2",
+  "Thêm sức 3",
+  "Bao đồng 1",
+  "Bao đồng 2",
+  "Bao đồng 3",
+  "Bao đồng 4",
+  "Vào đời 1",
+  "Vào đời 2",
+];
+
 export default function StudentLoginPage() {
   const router = useRouter();
   const [form, setForm] = useState({
@@ -127,12 +143,27 @@ export default function StudentLoginPage() {
               <label className="text-white/80 text-xs font-semibold mb-1.5 block">
                 Lớp
               </label>
-              <input
+              {/* <input
                 value={form.class_name}
                 placeholder="VD: Thiếu 2, Ấu 1..."
                 onChange={(e) => handleChange("class_name", e.target.value)}
                 className="w-full rounded-xl bg-white/25 border border-white/25 px-4 py-3 text-white placeholder-white/40 text-sm outline-none focus:border-white/60 focus:bg-white/30 transition-all"
-              />
+              /> */}
+              <select
+                value={form.class_name}
+                onChange={(e) => handleChange("class_name", e.target.value)}
+                className="w-full rounded-xl bg-white/25 border border-white/25 px-4 py-3 text-white text-sm outline-none focus:border-white/60 focus:bg-white/30 transition-all appearance-none"
+                style={{ colorScheme: "dark" }}
+              >
+                <option value="" disabled className="bg-indigo-900">
+                  Chọn lớp của bạn...
+                </option>
+                {CLASS_OPTIONS.map((cls) => (
+                  <option key={cls} value={cls} className="bg-indigo-900">
+                    {cls}
+                  </option>
+                ))}
+              </select>
             </div>
 
             {/* Ngành - dropdown */}
