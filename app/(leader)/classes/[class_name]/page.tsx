@@ -35,20 +35,38 @@ interface ClassDetail {
 }
 
 function AttendanceDots({ rate }: { rate: number }) {
-  const color = rate >= 80 ? "#10b981" : rate >= 60 ? "#f59e0b" : rate >= 40 ? "#f97316" : "#ef4444";
+  const color =
+    rate >= 80 ? "#10b981"
+    : rate >= 60 ? "#f59e0b"
+    : rate >= 40 ? "#f97316"
+    : "#ef4444";
   return (
     <div className="flex items-center gap-1.5">
       <div className="relative w-8 h-8">
-        <svg viewBox="0 0 36 36" className="rotate-[-90deg] w-8 h-8">
-          <circle cx="18" cy="18" r="15" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="3" />
+        <svg viewBox="0 0 36 36" className="rotate-90 w-8 h-8">
           <circle
-            cx="18" cy="18" r="15" fill="none"
-            stroke={color} strokeWidth="3"
+            cx="18"
+            cy="18"
+            r="15"
+            fill="none"
+            stroke="rgba(255,255,255,0.08)"
+            strokeWidth="3"
+          />
+          <circle
+            cx="18"
+            cy="18"
+            r="15"
+            fill="none"
+            stroke={color}
+            strokeWidth="3"
             strokeDasharray={`${(rate / 100) * 94.25} 94.25`}
             strokeLinecap="round"
           />
         </svg>
-        <span className="absolute inset-0 flex items-center justify-center text-[8px] font-bold" style={{ color }}>
+        <span
+          className="absolute inset-0 flex items-center justify-center text-[8px] font-bold"
+          style={{ color }}
+        >
           {rate}
         </span>
       </div>
@@ -68,7 +86,9 @@ function StudentRow({ student, index }: { student: Student; index: number }) {
       >
         {/* Rank */}
         <td className="px-4 py-3 text-center">
-          <span className={`text-sm font-bold ${student.rank <= 3 ? "text-amber-400" : "text-white/30"}`}>
+          <span
+            className={`text-sm font-bold ${student.rank <= 3 ? "text-amber-400" : "text-white/30"}`}
+          >
             #{student.rank}
           </span>
         </td>
@@ -76,8 +96,12 @@ function StudentRow({ student, index }: { student: Student; index: number }) {
         {/* Student info */}
         <td className="px-4 py-3">
           <div>
-            <p className="font-semibold text-white text-sm">{student.full_name}</p>
-            <p className="text-white/40 text-xs">{student.saint_name} · {student.id}</p>
+            <p className="font-semibold text-white text-sm">
+              {student.full_name}
+            </p>
+            <p className="text-white/40 text-xs">
+              {student.saint_name} · {student.id}
+            </p>
           </div>
         </td>
 
@@ -94,7 +118,9 @@ function StudentRow({ student, index }: { student: Student; index: number }) {
 
         {/* Total points */}
         <td className="px-4 py-3 text-center">
-          <span className="font-bold text-blue-400">{student.total_points}</span>
+          <span className="font-bold text-blue-400">
+            {student.total_points}
+          </span>
           <p className="text-white/30 text-xs">điểm</p>
         </td>
 
@@ -113,7 +139,9 @@ function StudentRow({ student, index }: { student: Student; index: number }) {
 
         {/* Expand */}
         <td className="px-4 py-3 text-center">
-          <span className={`text-white/30 text-xs transition-transform inline-block ${expanded ? "rotate-180" : ""}`}>
+          <span
+            className={`text-white/30 text-xs transition-transform inline-block ${expanded ? "rotate-180" : ""}`}
+          >
             ▼
           </span>
         </td>
@@ -127,12 +155,22 @@ function StudentRow({ student, index }: { student: Student; index: number }) {
               {student.recent_checkins.map((c, i) => (
                 <div key={i} className="rounded-xl bg-white/5 p-3">
                   <p className="text-white/60 text-xs mb-2">
-                    📅 {new Date(c.date).toLocaleDateString("vi-VN", { weekday: "long", day: "2-digit", month: "2-digit" })}
-                    <span className="ml-2 font-bold text-amber-400">+{c.point} điểm</span>
+                    📅{" "}
+                    {new Date(c.date).toLocaleDateString("vi-VN", {
+                      weekday: "long",
+                      day: "2-digit",
+                      month: "2-digit",
+                    })}
+                    <span className="ml-2 font-bold text-amber-400">
+                      +{c.point} điểm
+                    </span>
                   </p>
                   <div className="flex flex-wrap gap-1.5">
                     {c.activities.map((a, j) => (
-                      <span key={j} className="text-xs px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300">
+                      <span
+                        key={j}
+                        className="text-xs px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300"
+                      >
                         {a.name} +{a.point}
                       </span>
                     ))}
@@ -140,7 +178,9 @@ function StudentRow({ student, index }: { student: Student; index: number }) {
                 </div>
               ))}
               {student.recent_checkins.length === 0 && (
-                <p className="text-white/30 text-sm col-span-2">Chưa có lịch sử điểm danh</p>
+                <p className="text-white/30 text-sm col-span-2">
+                  Chưa có lịch sử điểm danh
+                </p>
               )}
             </div>
             {student.phone && (
@@ -165,7 +205,8 @@ export default function ClassDetailPage() {
   const [sortBy, setSortBy] = useState<"rank" | "name" | "checkins">("rank");
 
   useEffect(() => {
-    api.get(`/leaderboard/classes/${encodeURIComponent(className)}`)
+    api
+      .get(`/leaderboard/classes/${encodeURIComponent(className)}`)
       .then((res) => {
         setClassData(res.data.class);
         setStudents(res.data.students);
@@ -175,10 +216,11 @@ export default function ClassDetailPage() {
   }, [className]);
 
   const filtered = students
-    .filter((s) =>
-      s.full_name.toLowerCase().includes(search.toLowerCase()) ||
-      s.saint_name.toLowerCase().includes(search.toLowerCase()) ||
-      s.id.toLowerCase().includes(search.toLowerCase())
+    .filter(
+      (s) =>
+        s.full_name.toLowerCase().includes(search.toLowerCase()) ||
+        s.saint_name.toLowerCase().includes(search.toLowerCase()) ||
+        s.id.toLowerCase().includes(search.toLowerCase()),
     )
     .sort((a, b) => {
       if (sortBy === "name") return a.full_name.localeCompare(b.full_name);
@@ -198,26 +240,47 @@ export default function ClassDetailPage() {
             ← Quay lại
           </button>
 
-          {loading ? (
+          {loading ?
             <div className="flex justify-center py-20">
               <div className="w-10 h-10 border-4 border-blue-500/40 border-t-blue-500 rounded-full animate-spin" />
             </div>
-          ) : (
-            <>
+          : <>
               {/* Class Header */}
               {classData && (
-                <div className="rounded-2xl bg-gradient-to-br from-blue-500/10 to-indigo-600/5 border border-blue-500/20 p-6 mb-6">
+                <div className="rounded-2xl bg-linear-to-br from-blue-500/10 to-indigo-600/5 border border-blue-500/20 p-6 mb-6">
                   <div className="flex flex-wrap items-start justify-between gap-4">
                     <div>
-                      <h1 className="text-3xl font-black text-white">{classData.class_name}</h1>
-                      <p className="text-blue-400 font-medium mt-1">{classData.nganh}</p>
+                      <h1 className="text-3xl font-black text-white">
+                        {classData.class_name}
+                      </h1>
+                      <p className="text-blue-400 font-medium mt-1">
+                        {classData.nganh}
+                      </p>
                     </div>
 
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                      <StatCard label="Thiếu nhi" value={classData.total_students} unit="" />
-                      <StatCard label="Buổi SH" value={classData.total_sessions} unit="" />
-                      <StatCard label="TB chuyên cần" value={classData.avg_attendance_rate} unit="%" color="text-emerald-400" />
-                      <StatCard label="Tổng điểm" value={classData.total_points} unit="đ" color="text-amber-400" />
+                      <StatCard
+                        label="Thiếu nhi"
+                        value={classData.total_students}
+                        unit=""
+                      />
+                      <StatCard
+                        label="Buổi SH"
+                        value={classData.total_sessions}
+                        unit=""
+                      />
+                      <StatCard
+                        label="TB chuyên cần"
+                        value={classData.avg_attendance_rate}
+                        unit="%"
+                        color="text-emerald-400"
+                      />
+                      <StatCard
+                        label="Tổng điểm"
+                        value={classData.total_points}
+                        unit="đ"
+                        color="text-amber-400"
+                      />
                     </div>
                   </div>
                 </div>
@@ -246,23 +309,42 @@ export default function ClassDetailPage() {
               </div>
 
               {/* Table */}
-              <div className="rounded-2xl overflow-hidden border border-white/8" style={{ background: "rgba(255,255,255,0.02)" }}>
+              <div
+                className="rounded-2xl overflow-hidden border border-white/8"
+                style={{ background: "rgba(255,255,255,0.02)" }}
+              >
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
                       <tr className="border-b border-white/10">
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-white/30 uppercase tracking-wider w-12">#</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-white/30 uppercase tracking-wider">Học sinh</th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-white/30 uppercase tracking-wider">Chuyên cần</th>
-                        <th className="px-4 py-3 text-center text-xs font-semibold text-white/30 uppercase tracking-wider">Buổi ĐD</th>
-                        <th className="px-4 py-3 text-center text-xs font-semibold text-white/30 uppercase tracking-wider">Điểm</th>
-                        <th className="px-4 py-3 text-center text-xs font-semibold text-white/30 uppercase tracking-wider">5 buổi gần nhất</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-white/30 uppercase tracking-wider w-12">
+                          #
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-white/30 uppercase tracking-wider">
+                          Học sinh
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-white/30 uppercase tracking-wider">
+                          Chuyên cần
+                        </th>
+                        <th className="px-4 py-3 text-center text-xs font-semibold text-white/30 uppercase tracking-wider">
+                          Buổi ĐD
+                        </th>
+                        <th className="px-4 py-3 text-center text-xs font-semibold text-white/30 uppercase tracking-wider">
+                          Điểm
+                        </th>
+                        <th className="px-4 py-3 text-center text-xs font-semibold text-white/30 uppercase tracking-wider">
+                          5 buổi gần nhất
+                        </th>
                         <th className="px-4 py-3 w-8"></th>
                       </tr>
                     </thead>
                     <tbody>
                       {filtered.map((student, index) => (
-                        <StudentRow key={student.id} student={student} index={index} />
+                        <StudentRow
+                          key={student.id}
+                          student={student}
+                          index={index}
+                        />
                       ))}
                     </tbody>
                   </table>
@@ -276,19 +358,30 @@ export default function ClassDetailPage() {
                 )}
               </div>
             </>
-          )}
+          }
         </div>
       </div>
     </ProtectedRoute>
   );
 }
 
-function StatCard({ label, value, unit, color = "text-white" }: { label: string; value: number; unit: string; color?: string }) {
+function StatCard({
+  label,
+  value,
+  unit,
+  color = "text-white",
+}: {
+  label: string;
+  value: number;
+  unit: string;
+  color?: string;
+}) {
   return (
     <div className="text-center">
       <p className="text-white/40 text-xs mb-1">{label}</p>
       <p className={`text-2xl font-black ${color}`}>
-        {value.toLocaleString()}<span className="text-sm font-normal ml-0.5">{unit}</span>
+        {value.toLocaleString()}
+        <span className="text-sm font-normal ml-0.5">{unit}</span>
       </p>
     </div>
   );

@@ -57,10 +57,10 @@ export default function LeaderDashboard() {
         <nav className="relative z-10 border-b border-white/8 px-4 py-4">
           <div className="max-w-5xl mx-auto flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-sm">
+              <div className="w-8 h-8 rounded-lg bg-linear-to-br from-amber-400 to-orange-500 flex items-center justify-center text-sm">
                 ✝️
               </div>
-              <span className="font-bold text-white">Xứ Đoàn</span>
+              <span className="font-bold text-white">Xứ Đoàn Chúa Ba Ngôi</span>
             </div>
 
             <div className="flex items-center gap-2">

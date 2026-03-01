@@ -46,7 +46,7 @@ export default function StudentQR() {
   const handleReset = () => {
     if (confirm("Bạn muốn đăng ký lại với thông tin khác?")) {
       localStorage.removeItem("student");
-      router.push("/student");
+      router.push("/");
     }
   };
 

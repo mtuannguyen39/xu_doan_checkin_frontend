@@ -5,6 +5,7 @@ import { BrowserMultiFormatReader } from "@zxing/browser";
 import { NotFoundException } from "@zxing/library";
 import { api } from "@/lib/axios";
 import { ProtectedRoute } from "@/components/ProtectedRoute/page";
+import { useRouter } from "next/navigation";
 
 type ScanStatus = "idle" | "scanning" | "success" | "error";
 
@@ -21,8 +22,8 @@ export default function ScanPage() {
   const [result, setResult] = useState<ScanResult | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
   const [isStarted, setIsStarted] = useState(false);
+  const router = useRouter();
 
-  // Dọn dẹp khi unmount
   useEffect(() => {
     return () => {
       stopCamera();
@@ -30,14 +31,11 @@ export default function ScanPage() {
   }, []);
 
   const stopCamera = () => {
-    if (readerRef.current) {
-      try {
-        BrowserMultiFormatReader.releaseAllStreams();
-      } catch {}
-      readerRef.current = null;
-    }
+    try {
+      BrowserMultiFormatReader.releaseAllStreams();
+    } catch {}
+    readerRef.current = null;
     setIsStarted(false);
-    setStatus("idle");
   };
 
   const startScan = async () => {
@@ -53,43 +51,42 @@ export default function ScanPage() {
       readerRef.current = reader;
 
       await reader.decodeFromVideoDevice(
-        undefined, // dùng camera mặc định (rear camera trên mobile)
+        undefined,
         videoRef.current,
         async (qrResult, err) => {
-          if (qrResult) {
-            const qrCode = qrResult.getText();
-
-            // Dừng scan ngay khi đọc được
-            stopCamera();
-            setStatus("scanning"); // loading state
-
-            try {
-              const res = await api.post("/checkins/scan", { qr_code: qrCode });
-              const data = res.data?.data;
-
-              setResult({
-                student_name: data?.student?.full_name,
-                class_name: data?.student?.class_name,
-                message: res.data?.message || "Điểm danh thành công!",
-              });
-              setStatus("success");
-            } catch (apiErr: any) {
-              const msg =
-                apiErr?.response?.data?.message ||
-                apiErr?.response?.data?.error ||
-                "Điểm danh thất bại!";
-              setErrorMsg(msg);
-              setStatus("error");
-            }
+          if (err) {
+            if (err instanceof NotFoundException) return;
+            console.warn("QR scan error:", err);
+            return;
           }
 
-          // Bỏ qua NotFoundException (không tìm thấy QR trong frame)
-          if (err && !(err instanceof NotFoundException)) {
-            console.warn("QR error:", err);
+          if (!qrResult) return;
+
+          const qrCode = qrResult.getText();
+          stopCamera();
+
+          try {
+            // ✅ FIX: đúng endpoint /checkins/scan
+            const res = await api.post("/checkins/scan", { qr_code: qrCode });
+            const data = res.data?.data;
+
+            setResult({
+              student_name: data?.student?.full_name,
+              class_name: data?.student?.class_name,
+              message: res.data?.message || "Điểm danh thành công!",
+            });
+            setStatus("success");
+          } catch (apiErr: any) {
+            const msg =
+              apiErr?.response?.data?.message ||
+              apiErr?.response?.data?.error ||
+              "Điểm danh thất bại!";
+            setErrorMsg(msg);
+            setStatus("error");
           }
         },
       );
-    } catch (err: any) {
+    } catch {
       setErrorMsg("Không thể mở camera. Vui lòng kiểm tra quyền truy cập!");
       setStatus("error");
       setIsStarted(false);
@@ -107,13 +104,12 @@ export default function ScanPage() {
     <ProtectedRoute permissions={["checkins:write"]}>
       <div className="min-h-screen bg-[#080c14] flex flex-col items-center justify-center p-4">
         <div className="w-full max-w-sm">
-          {/* Header */}
           <div className="text-center mb-8">
             <h1 className="text-2xl font-black text-white">📷 Quét QR</h1>
             <p className="text-white/40 text-sm mt-1">Điểm danh thiếu nhi</p>
           </div>
 
-          {/* Camera view */}
+          {/* Camera */}
           <div className="relative rounded-2xl overflow-hidden border border-white/10 bg-black aspect-square mb-6">
             <video
               ref={videoRef}
@@ -123,7 +119,6 @@ export default function ScanPage() {
               muted
             />
 
-            {/* Placeholder khi chưa bắt đầu */}
             {!isStarted && (
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="text-center">
@@ -133,23 +128,21 @@ export default function ScanPage() {
               </div>
             )}
 
-            {/* Scanning overlay - khung ngắm */}
+            {/* Khung ngắm */}
             {isStarted && status === "scanning" && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <div className="w-52 h-52 relative">
-                  {/* 4 góc khung */}
                   <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-amber-400 rounded-tl-lg" />
                   <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-amber-400 rounded-tr-lg" />
                   <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-amber-400 rounded-bl-lg" />
                   <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-amber-400 rounded-br-lg" />
-                  {/* Scan line animation */}
                   <div className="absolute left-2 right-2 h-0.5 bg-amber-400/70 animate-scan-line" />
                 </div>
               </div>
             )}
           </div>
 
-          {/* Status cards */}
+          {/* Status */}
           {status === "success" && result && (
             <div className="rounded-2xl bg-emerald-500/10 border border-emerald-500/30 p-5 mb-4 text-center">
               <p className="text-4xl mb-2">✅</p>
@@ -199,6 +192,12 @@ export default function ScanPage() {
                 Quét tiếp
               </button>
             )}
+            <button
+              onClick={() => router.back()}
+              className="w-full py-3 rounded-2xl bg-blue-500/20 border border-blue-500/30 text-blue-400 font-semibold hover:bg-blue-500/30 transition-all"
+            >
+              Quay lại
+            </button>
           </div>
         </div>
       </div>
