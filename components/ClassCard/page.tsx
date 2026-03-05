@@ -33,12 +33,12 @@ export function ClassCard({
             {cls.nganh}
           </span>
         </div>
-        <span
+        {/* <span
           className="text-xl group-hover:translate-x-1 transition-transform"
           style={{ color: theme.accent }}
         >
           →
-        </span>
+        </span> */}
       </div>
 
       <div className="grid grid-cols-3 gap-2">

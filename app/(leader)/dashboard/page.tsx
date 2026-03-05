@@ -34,47 +34,142 @@ export default function LeaderDashboard() {
   useEffect(() => {
     api
       .get("/statistics/dashboard")
-      .then((res) => setStats(res.data))
-      .catch(console.error)
+      .then((res) => {
+        const d = res.data;
+        if (d?.overview) {
+          setStats({
+            total_students: d.overview.total_students ?? 0,
+            total_checkins: d.overview.total_checkins ?? 0,
+            today_checkins: d.overview.today_checkins ?? 0,
+            classes: (d.class_stats ?? []).map((c: any) => ({
+              class_name: c.class_name,
+              total_students: c.total_students ?? 0,
+              today_checkins: c.today_checkins ?? 0,
+            })),
+          });
+        } else {
+          setStats({
+            total_students: d?.total_students ?? 0,
+            total_checkins: d?.total_checkins ?? 0,
+            today_checkins: d?.today_checkins ?? 0,
+            classes: (d?.classes ?? []).map((c: any) => ({
+              class_name: c.class_name,
+              total_students: c.total_students ?? 0,
+              today_checkins: c.today_checkins ?? 0,
+            })),
+          });
+        }
+      })
+      .catch(() =>
+        setStats({
+          total_students: 0,
+          total_checkins: 0,
+          today_checkins: 0,
+          classes: [],
+        }),
+      )
       .finally(() => setLoading(false));
   }, []);
 
-  const handleLogout = () => {
-    logout();
-    router.push("/login");
-  };
+  const myRole = user?.role ?? "";
+  const canManageUsers = [
+    "SUPER_ADMIN",
+    "XU_DOAN_TRUONG",
+    "XU_DOAN_PHO",
+  ].includes(myRole);
+
+  const attendanceRate =
+    stats && stats.total_students > 0 ?
+      Math.round((stats.today_checkins / stats.total_students) * 100)
+    : 0;
 
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-[#080c14] text-white">
-        {/* Background */}
-        <div className="fixed inset-0 pointer-events-none">
-          <div className="absolute top-0 right-0 w-80 h-80 bg-amber-500/5 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-80 h-80 bg-blue-500/5 rounded-full blur-3xl" />
+        {/* Ambient background */}
+        <div className="fixed inset-0 pointer-events-none overflow-hidden">
+          <div className="absolute -top-40 -right-40 w-125 h-125 bg-amber-500/4 rounded-full blur-3xl" />
+          <div className="absolute -bottom-40 -left-40 w-125 h-125 bg-blue-600/5 rounded-full blur-3xl" />
         </div>
 
-        {/* Nav */}
-        <nav className="relative z-10 border-b border-white/8 px-4 py-4">
-          <div className="max-w-5xl mx-auto flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-linear-to-br from-amber-400 to-orange-500 flex items-center justify-center text-sm">
+        {/* ── Navbar ── */}
+        <nav
+          className="relative z-20 border-b border-white/6 px-4 py-3"
+          style={{
+            background: "rgba(8,12,20,0.85)",
+            backdropFilter: "blur(12px)",
+          }}
+        >
+          <div className="max-w-5xl mx-auto flex items-center justify-between gap-3">
+            {/* Logo */}
+            <div className="flex items-center gap-2.5 shrink-0">
+              <div
+                className="w-8 h-8 rounded-xl flex items-center justify-center text-sm shrink-0"
+                style={{
+                  background: "linear-gradient(135deg,#f59e0b,#ef4444)",
+                }}
+              >
                 ✝️
               </div>
-              <span className="font-bold text-white">Xứ Đoàn Chúa Ba Ngôi</span>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <div className="text-right mr-2 hidden sm:block">
-                <p className="text-white text-sm font-semibold">
-                  {user?.full_name}
+              <div className="hidden sm:block">
+                <p className="text-white font-bold text-sm leading-none">
+                  Xứ Đoàn Chúa Ba Ngôi
                 </p>
-                <p className="text-white/40 text-xs">
-                  {ROLE_LABELS[user?.role || ""] || user?.role}
+                <p className="text-white/30 text-[10px] mt-0.5">
+                  Hệ thống điểm danh
                 </p>
               </div>
+            </div>
+
+            {/* Right side */}
+            <div className="flex items-center gap-2">
+              {/* Nút Quản lý tài khoản — chỉ hiện với role có quyền, trên desktop */}
+              {canManageUsers && (
+                <button
+                  onClick={() => router.push("/admin/users")}
+                  className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all hover:scale-[1.02]"
+                  style={{
+                    background: "rgba(99,102,241,0.1)",
+                    borderColor: "rgba(99,102,241,0.25)",
+                    color: "#a5b4fc",
+                  }}
+                >
+                  👥 Quản lý tài khoản
+                </button>
+              )}
+
+              {/* User pill */}
+              <div
+                className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg"
+                style={{
+                  background: "rgba(255,255,255,0.04)",
+                  border: "1px solid rgba(255,255,255,0.07)",
+                }}
+              >
+                <div
+                  className="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black shrink-0"
+                  style={{
+                    background: "linear-gradient(135deg,#6366f1,#8b5cf6)",
+                  }}
+                >
+                  {user?.full_name?.charAt(0) ?? "?"}
+                </div>
+                <div className="hidden sm:block">
+                  <p className="text-white text-xs font-semibold leading-none">
+                    {user?.full_name}
+                  </p>
+                  <p className="text-white/30 text-[10px] mt-0.5">
+                    {ROLE_LABELS[myRole] ?? myRole}
+                  </p>
+                </div>
+              </div>
+
               <button
-                onClick={handleLogout}
-                className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white/60 text-sm hover:bg-white/10 transition-colors"
+                onClick={() => {
+                  logout();
+                  router.push("/login");
+                }}
+                className="px-2.5 py-1.5 rounded-lg text-white/40 text-xs hover:text-white/70 hover:bg-white/5 transition-all"
               >
                 Đăng xuất
               </button>
@@ -82,122 +177,209 @@ export default function LeaderDashboard() {
           </div>
         </nav>
 
+        {/* ── Page body ── */}
         <div className="relative z-10 max-w-5xl mx-auto px-4 py-8">
-          {/* Greeting */}
-          <div className="mb-8">
-            <h1 className="text-2xl font-black text-white">
-              Xin chào, {user?.full_name?.split(" ").pop()} 👋
-            </h1>
-            <p className="text-white/40 text-sm mt-1">
-              {user?.class_name ?
-                `Trưởng lớp ${user.class_name}`
-              : "Tổng quan hệ thống"}
-            </p>
+          {/* Greeting + mobile user management button */}
+          <div className="flex items-start justify-between gap-4 mb-8">
+            <div>
+              <h1 className="text-2xl font-black text-white">
+                Xin chào, {user?.full_name?.split(" ").pop()} 👋
+              </h1>
+              <p className="text-white/40 text-sm mt-1">
+                {user?.class_name ?
+                  `Trưởng lớp ${user.class_name}`
+                : "Tổng quan hệ thống"}
+              </p>
+            </div>
+
+            {/* Mobile-only: nút quản lý tài khoản */}
+            {canManageUsers && (
+              <button
+                onClick={() => router.push("/admin/users")}
+                className="sm:hidden shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-semibold transition-all"
+                style={{
+                  background: "rgba(99,102,241,0.1)",
+                  borderColor: "rgba(99,102,241,0.25)",
+                  color: "#a5b4fc",
+                }}
+              >
+                👥 Quản lý TK
+              </button>
+            )}
           </div>
 
-          {/* Quick nav */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
+          {/* ── Quick nav grid ── */}
+          <div className="grid grid-cols-3 gap-2.5 mb-8 sm:grid-cols-5">
             <NavCard
               icon="📷"
               label="Điểm danh"
-              href="/scan"
-              color="from-blue-500/20 to-blue-600/10 border-blue-500/20"
+              color="#3b82f6"
+              onClick={() => router.push("/scan")}
             />
             <NavCard
               icon="🏆"
               label="Xếp hạng"
-              href="/leaderboard"
-              color="from-amber-500/20 to-amber-600/10 border-amber-500/20"
+              color="#f59e0b"
+              onClick={() => router.push("/leaderboard")}
             />
             <NavCard
               icon="🏫"
               label="Danh sách lớp"
-              href="/classes"
-              color="from-purple-500/20 to-purple-600/10 border-purple-500/20"
+              color="#a855f7"
+              onClick={() => router.push("/classes")}
             />
-            <ShowIf roles={["SUPER_ADMIN", "XU_DOAN_TRUONG", "XU_DOAN_PHO"]}>
-              <NavCard
-                icon="📊"
-                label="Thống kê"
-                href="/statistics"
-                color="from-emerald-500/20 to-emerald-600/10 border-emerald-500/20"
-              />
-            </ShowIf>
+            {canManageUsers && (
+              <>
+                <NavCard
+                  icon="📊"
+                  label="Thống kê"
+                  color="#10b981"
+                  onClick={() => router.push("/statistics")}
+                />
+                <NavCard
+                  icon="👥"
+                  label="Quản lý TK"
+                  color="#6366f1"
+                  onClick={() => router.push("/admin/users")}
+                />
+              </>
+            )}
           </div>
 
-          {/* Stats */}
+          {/* ── Stats ── */}
           {loading ?
-            <div className="flex justify-center py-12">
-              <div className="w-8 h-8 border-4 border-amber-500/40 border-t-amber-500 rounded-full animate-spin" />
+            <div className="flex justify-center py-16">
+              <div className="w-8 h-8 border-[3px] border-amber-500/30 border-t-amber-500 rounded-full animate-spin" />
             </div>
           : stats ?
             <>
-              <div className="grid grid-cols-3 gap-4 mb-8">
-                <GlassCard
-                  title="Tổng thiếu nhi"
+              {/* 3 stat cards */}
+              <div className="grid grid-cols-3 gap-3 mb-8">
+                <StatCard
+                  label="Tổng thiếu nhi"
                   value={stats.total_students}
                   icon="👦"
+                  valueColor="#93c5fd"
+                  bg="rgba(59,130,246,0.08)"
+                  border="rgba(59,130,246,0.18)"
                 />
-                <GlassCard
-                  title="Điểm danh hôm nay"
+                <StatCard
+                  label="Điểm danh hôm nay"
                   value={stats.today_checkins}
+                  sub={`${attendanceRate}% có mặt`}
                   icon="✅"
-                  accent
+                  valueColor="#fcd34d"
+                  bg="rgba(245,158,11,0.1)"
+                  border="rgba(245,158,11,0.25)"
+                  highlight
                 />
-                <GlassCard
-                  title="Tổng buổi điểm danh"
+                <StatCard
+                  label="Tổng lượt ĐD"
                   value={stats.total_checkins}
                   icon="📅"
+                  valueColor="#c4b5fd"
+                  bg="rgba(168,85,247,0.07)"
+                  border="rgba(168,85,247,0.18)"
                 />
               </div>
 
               {/* Class grid */}
-              {stats.classes && stats.classes.length > 0 && (
+              {stats.classes.length > 0 && (
                 <>
-                  <h2 className="text-lg font-bold text-white mb-4">
-                    Theo lớp
-                  </h2>
-                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                    {stats.classes.map((cls) => (
-                      <button
-                        key={cls.class_name}
-                        onClick={() =>
-                          router.push(
-                            `/classes/${encodeURIComponent(cls.class_name)}`,
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xs font-bold text-white/40 uppercase tracking-widest">
+                      Theo lớp
+                    </h2>
+                    <span className="text-white/20 text-xs">
+                      {stats.classes.length} lớp
+                    </span>
+                  </div>
+
+                  <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+                    {stats.classes.map((cls) => {
+                      const pct =
+                        cls.total_students > 0 ?
+                          Math.round(
+                            (cls.today_checkins / cls.total_students) * 100,
                           )
-                        }
-                        className="text-left rounded-2xl bg-white/5 border border-white/10 p-4 hover:bg-white/8 hover:scale-[1.02] transition-all group"
-                      >
-                        <div className="flex items-center justify-between mb-3">
-                          <h3 className="font-bold text-white">
-                            {cls.class_name}
-                          </h3>
-                          <span className="text-white/20 group-hover:text-white/50 transition-colors text-sm">
-                            →
-                          </span>
-                        </div>
-                        <div className="flex gap-4 text-sm">
-                          <div>
-                            <p className="text-white/40 text-xs">Thiếu nhi</p>
-                            <p className="font-bold text-white">
-                              {cls.total_students}
-                            </p>
+                        : 0;
+                      const barColor =
+                        pct >= 80 ? "#10b981"
+                        : pct >= 50 ? "#f59e0b"
+                        : "#ef4444";
+
+                      return (
+                        <button
+                          key={cls.class_name}
+                          onClick={() =>
+                            router.push(
+                              `/classes/${encodeURIComponent(cls.class_name)}`,
+                            )
+                          }
+                          className="text-left rounded-2xl p-4 border transition-all group hover:scale-[1.015]"
+                          style={{
+                            background: "rgba(255,255,255,0.03)",
+                            borderColor: "rgba(255,255,255,0.08)",
+                          }}
+                        >
+                          <div className="flex items-center justify-between mb-2.5">
+                            <h3 className="font-bold text-white text-sm">
+                              {cls.class_name}
+                            </h3>
+                            <span className="text-white/20 group-hover:text-white/50 transition-colors text-sm">
+                              →
+                            </span>
                           </div>
-                          <div>
-                            <p className="text-white/40 text-xs">Hôm nay</p>
-                            <p className="font-bold text-emerald-400">
-                              {cls.today_checkins}
-                            </p>
+
+                          {/* Progress bar */}
+                          <div
+                            className="w-full h-1 rounded-full mb-2.5"
+                            style={{ background: "rgba(255,255,255,0.06)" }}
+                          >
+                            <div
+                              className="h-full rounded-full transition-all duration-500"
+                              style={{
+                                width: `${pct}%`,
+                                backgroundColor: barColor,
+                              }}
+                            />
                           </div>
-                        </div>
-                      </button>
-                    ))}
+
+                          <div className="flex items-center justify-between text-xs">
+                            <div className="flex gap-3 text-white/40">
+                              <span>
+                                <span className="text-white font-semibold">
+                                  {cls.total_students}
+                                </span>{" "}
+                                em
+                              </span>
+                              <span>
+                                Hôm nay:{" "}
+                                <span
+                                  className="font-semibold"
+                                  style={{ color: barColor }}
+                                >
+                                  {cls.today_checkins}
+                                </span>
+                              </span>
+                            </div>
+                            <span
+                              className="font-bold"
+                              style={{ color: barColor }}
+                            >
+                              {pct}%
+                            </span>
+                          </div>
+                        </button>
+                      );
+                    })}
                   </div>
                 </>
               )}
             </>
-          : <div className="text-center py-12 text-white/30">
-              <p>Không thể tải dữ liệu</p>
+          : <div className="text-center py-16 text-white/20">
+              <p className="text-4xl mb-3">📡</p>
+              <p className="text-sm">Không thể tải dữ liệu</p>
             </div>
           }
         </div>
@@ -206,51 +388,66 @@ export default function LeaderDashboard() {
   );
 }
 
-function GlassCard({
-  title,
-  value,
-  icon,
-  accent,
-}: {
-  title: string;
-  value: number;
-  icon: string;
-  accent?: boolean;
-}) {
-  return (
-    <div
-      className={`rounded-2xl p-5 border ${accent ? "bg-amber-500/10 border-amber-500/20" : "bg-white/5 border-white/10"}`}
-    >
-      <p className="text-2xl mb-2">{icon}</p>
-      <p className="text-white/50 text-xs mb-1">{title}</p>
-      <p
-        className={`text-3xl font-black ${accent ? "text-amber-400" : "text-white"}`}
-      >
-        {value.toLocaleString()}
-      </p>
-    </div>
-  );
-}
-
+// ── NavCard ────────────────────────────────────────────────
 function NavCard({
   icon,
   label,
-  href,
   color,
+  onClick,
 }: {
   icon: string;
   label: string;
-  href: string;
   color: string;
+  onClick: () => void;
 }) {
-  const router = useRouter();
   return (
     <button
-      onClick={() => router.push(href)}
-      className={`rounded-xl bg-gradient-to-br ${color} border p-4 text-center hover:scale-105 transition-all`}
+      onClick={onClick}
+      className="rounded-2xl p-3.5 text-center border transition-all hover:scale-[1.04] group"
+      style={{ background: `${color}12`, borderColor: `${color}28` }}
     >
-      <p className="text-2xl mb-1">{icon}</p>
-      <p className="text-white text-xs font-semibold">{label}</p>
+      <p className="text-xl mb-1.5">{icon}</p>
+      <p className="text-white/60 group-hover:text-white text-[11px] font-semibold transition-colors leading-tight">
+        {label}
+      </p>
     </button>
+  );
+}
+
+// ── StatCard ───────────────────────────────────────────────
+function StatCard({
+  label,
+  value,
+  sub,
+  icon,
+  valueColor,
+  bg,
+  border,
+  highlight,
+}: {
+  label: string;
+  value: number | undefined | null;
+  sub?: string;
+  icon: string;
+  valueColor: string;
+  bg: string;
+  border: string;
+  highlight?: boolean;
+}) {
+  const safe = value ?? 0;
+  return (
+    <div
+      className={`rounded-2xl p-4 border ${highlight ? "ring-1 ring-amber-500/20" : ""}`}
+      style={{ background: bg, borderColor: border }}
+    >
+      <p className="text-lg mb-1.5">{icon}</p>
+      <p className="text-white/40 text-[11px] font-medium leading-tight mb-1">
+        {label}
+      </p>
+      <p className="text-2xl font-black" style={{ color: valueColor }}>
+        {safe.toLocaleString()}
+      </p>
+      {sub && <p className="text-white/25 text-[10px] mt-0.5">{sub}</p>}
+    </div>
   );
 }

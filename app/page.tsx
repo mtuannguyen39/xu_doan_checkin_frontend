@@ -15,8 +15,8 @@ const NGANH_OPTIONS = [
 const CLASS_OPTIONS = [
   "Khai tâm 1",
   "Khai tâm 2",
-  "Rước lễ 1",
-  "Rước lễ 2",
+  "Rước Lễ 1",
+  "Rước Lễ 2",
   "Thêm sức 1",
   "Thêm sức 2",
   "Thêm sức 3",
