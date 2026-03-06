@@ -230,14 +230,14 @@ export default function StatisticsPage() {
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 text-xs">
                     <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-                    <span className="text-white/60">Đúng giờ (10đ)</span>
+                    <span className="text-white/60">Đúng giờ (5đ)</span>
                     <span className="text-emerald-400 font-bold ml-auto">
                       {overview.on_time_count} lượt · {overview.on_time_rate}%
                     </span>
                   </div>
                   <div className="flex items-center gap-2 text-xs">
                     <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
-                    <span className="text-white/60">Trễ nhẹ (5đ)</span>
+                    <span className="text-white/60">Trễ nhẹ (2đ)</span>
                     <span className="text-amber-400 font-bold ml-auto">
                       {overview.late_5_count} lượt · {overview.late_5pts_rate}%
                     </span>

@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import { api } from "@/lib/axios";
 import { useAuth } from "@/lib/auth";
 import { ProtectedRoute } from "@/components/ProtectedRoute/page";
+import { QRModal } from "@/components/QRModal";
 
 interface Student {
   rank: number;
@@ -22,6 +23,7 @@ interface Student {
   recent_checkins: {
     date: string;
     point: number;
+    created_at: string | null;
     activities: { name: string; point: number }[];
   }[];
 }
@@ -270,11 +272,13 @@ function StudentRow({
   canEdit,
   onEdit,
   onDelete,
+  onShowQR,
 }: {
   student: Student;
   canEdit: boolean;
   onEdit: (s: Student) => void;
   onDelete: (id: string, name: string) => void;
+  onShowQR: (id: string) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
 
@@ -351,7 +355,7 @@ function StudentRow({
                     e.stopPropagation();
                     onEdit(student);
                   }}
-                  className="w-7 h-7 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/25 hover:border-blue-500/40 transition-all flex items-center justify-center text-xs"
+                  className="w-7 h-7 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/25 hover:border-blue-500/40 transition-all flex items-center justify-center text-xs cursor-pointer"
                   title="Chỉnh sửa"
                 >
                   ✏️
@@ -362,13 +366,24 @@ function StudentRow({
                     e.stopPropagation();
                     onDelete(student.id, student.full_name);
                   }}
-                  className="w-7 h-7 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/25 hover:border-red-500/40 transition-all flex items-center justify-center text-xs"
+                  className="w-7 h-7 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/25 hover:border-red-500/40 transition-all flex items-center justify-center text-xs cursor-pointer"
                   title="Xóa"
                 >
                   🗑
                 </button>
               </>
             )}
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onShowQR(student.id);
+              }}
+              className="w-7 h-7 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-400
+                hover:bg-purple-500/25 transition-all flex items-center justify-center text-xs cursor-pointer"
+              title="Lấy lại QR"
+            >
+              📱
+            </button>
             <span
               className={`text-white/30 text-xs transition-transform inline-block cursor-pointer ${expanded ? "rotate-180" : ""}`}
               onClick={() => setExpanded(!expanded)}
@@ -391,7 +406,17 @@ function StudentRow({
                       weekday: "long",
                       day: "2-digit",
                       month: "2-digit",
+                      timeZone: "Asia/Ho_Chi_Minh",
                     })}
+                    {c.created_at && (
+                      <span className="ml-1.5 text-white/30">
+                        {new Date(c.created_at).toLocaleTimeString("vi-VN", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          timeZone: "Asia/Ho_Chi_Minh",
+                        })}
+                      </span>
+                    )}
                     <span className="ml-2 font-bold text-amber-400">
                       +{c.point} điểm
                     </span>
@@ -438,6 +463,10 @@ export default function ClassDetailPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<"rank" | "name" | "checkins">("rank");
+
+  const [qrTarget, setQrTarget] = useState<{ id: string; name: string } | null>(
+    null,
+  );
 
   const [editTarget, setEditTarget] = useState<Student | null>(null);
   const [editLoading, setEditLoading] = useState(false);
@@ -538,6 +567,14 @@ export default function ClassDetailPage() {
             >
               {toast.type === "success" ? "✅" : "❌"} {toast.msg}
             </div>
+          )}
+
+          {/* QR Modal */}
+          {qrTarget && (
+            <QRModal
+              studentId={qrTarget.id}
+              onClose={() => setQrTarget(null)}
+            />
           )}
 
           {/* Edit modal */}
@@ -671,6 +708,9 @@ export default function ClassDetailPage() {
                           canEdit={canEdit}
                           onEdit={setEditTarget}
                           onDelete={(id, name) => setDeleteTarget({ id, name })}
+                          onShowQR={(id) =>
+                            setQrTarget({ id, name: student.full_name })
+                          }
                         />
                       ))}
                     </tbody>
