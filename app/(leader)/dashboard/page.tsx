@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import { ProtectedRoute, ShowIf } from "@/components/ProtectedRoute/page";
+import { useExportExcel } from "@/hooks/useExportExcel";
 
 interface DashboardStats {
   total_students: number;
@@ -30,6 +31,8 @@ export default function LeaderDashboard() {
   const router = useRouter();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const { exportAll, exporting } = useExportExcel();
 
   useEffect(() => {
     api
@@ -183,7 +186,7 @@ export default function LeaderDashboard() {
           <div className="flex items-start justify-between gap-4 mb-8">
             <div>
               <h1 className="text-2xl font-black text-white">
-                Xin chào, {user?.full_name?.split(" ").pop()} 👋
+                Xin chào, {user?.full_name?.split("  ")} 👋 {/* ĐÃ fix*/}
               </h1>
               <p className="text-white/40 text-sm mt-1">
                 {user?.class_name ?
@@ -293,6 +296,30 @@ export default function LeaderDashboard() {
                     <span className="text-white/20 text-xs">
                       {stats.classes.length} lớp
                     </span>
+                    {[
+                      "SUPER_ADMIN",
+                      "XU_DOAN_TRUONG",
+                      "XU_DOAN_PHO",
+                      "TRUONG_TRUC",
+                    ].includes(user?.role ?? "") && (
+                      <button
+                        onClick={async () => {
+                          try {
+                            await exportAll();
+                          } catch (e: any) {
+                            alert(e.message);
+                          }
+                        }}
+                        disabled
+                        // disabled={exporting}
+                        className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-semibold hover:bg-emerald-500/20 transition-all disabled:opacity-50"
+                      >
+                        {exporting ?
+                          <span className="w-3 h-3 border-2 border-emerald-400/30 border-t-emerald-400 rounded-full animate-spin" />
+                        : "📥 "}
+                        {exporting ? "Đang xuất..." : "Xuất Excel toàn đoàn"}
+                      </button>
+                    )}
                   </div>
 
                   <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">

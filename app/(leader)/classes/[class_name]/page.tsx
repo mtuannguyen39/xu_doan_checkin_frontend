@@ -6,6 +6,8 @@ import { api } from "@/lib/axios";
 import { useAuth } from "@/lib/auth";
 import { ProtectedRoute } from "@/components/ProtectedRoute/page";
 import { QRModal } from "@/components/QRModal";
+import { useExportExcel } from "@/hooks/useExportExcel";
+import { EditPointModal } from "@/components/EditPointModal";
 
 interface Student {
   rank: number;
@@ -21,6 +23,7 @@ interface Student {
   total_points: number;
   attendance_rate: number;
   recent_checkins: {
+    checkin_id: number;
     date: string;
     point: number;
     created_at: string | null;
@@ -37,9 +40,14 @@ interface ClassDetail {
   total_points: number;
 }
 
-// ============================================================
-// Attendance circle
-// ============================================================
+type EditPointTarget = {
+  checkin_id: number;
+  date: string;
+  point: number;
+  student_name: string;
+};
+
+// ── Attendance circle ────────────────────────────────────────
 function AttendanceDots({ rate }: { rate: number }) {
   const color =
     rate >= 80 ? "#10b981"
@@ -81,9 +89,7 @@ function AttendanceDots({ rate }: { rate: number }) {
   );
 }
 
-// ============================================================
-// Edit Modal
-// ============================================================
+// ── Edit student info modal ──────────────────────────────────
 function EditModal({
   student,
   onSave,
@@ -120,7 +126,6 @@ function EditModal({
         <p className="text-white/40 text-xs mb-5">
           ID: {student.id} · Lớp {student.class_name}
         </p>
-
         <div className="space-y-4">
           <div>
             <label className="text-white/50 text-xs font-semibold mb-1.5 block">
@@ -170,11 +175,9 @@ function EditModal({
             </button>
           </div>
         </div>
-
         <p className="text-white/20 text-xs mt-4 mb-5">
           * Không thể đổi lớp, ngành hoặc ID qua form này
         </p>
-
         <div className="flex gap-3">
           <button
             onClick={onCancel}
@@ -203,9 +206,7 @@ function EditModal({
   );
 }
 
-// ============================================================
-// Delete Modal
-// ============================================================
+// ── Delete modal ─────────────────────────────────────────────
 function DeleteModal({
   name,
   onConfirm,
@@ -232,8 +233,7 @@ function DeleteModal({
         </h3>
         <p className="text-white/50 text-sm text-center mb-6">
           Bạn có chắc muốn xóa{" "}
-          <span className="text-white font-semibold">{name}</span>?
-          <br />
+          <span className="text-white font-semibold">{name}</span>?<br />
           <span className="text-red-400 text-xs">
             Toàn bộ lịch sử điểm danh sẽ bị xóa vĩnh viễn!
           </span>
@@ -264,21 +264,21 @@ function DeleteModal({
   );
 }
 
-// ============================================================
-// Student Row
-// ============================================================
+// ── Student Row ──────────────────────────────────────────────
 function StudentRow({
   student,
   canEdit,
   onEdit,
   onDelete,
   onShowQR,
+  onEditPoint,
 }: {
   student: Student;
   canEdit: boolean;
   onEdit: (s: Student) => void;
   onDelete: (id: string, name: string) => void;
   onShowQR: (id: string) => void;
+  onEditPoint: (target: EditPointTarget) => void;
 }) {
   const [expanded, setExpanded] = useState(false);
 
@@ -344,29 +344,26 @@ function StudentRow({
             ))}
           </div>
         </td>
-        {/* Action buttons */}
         <td className="px-3 py-3">
           <div className="flex items-center justify-end gap-1.5">
             {canEdit && (
               <>
-                {/* Edit */}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     onEdit(student);
                   }}
-                  className="w-7 h-7 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/25 hover:border-blue-500/40 transition-all flex items-center justify-center text-xs cursor-pointer"
-                  title="Chỉnh sửa"
+                  className="w-7 h-7 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/25 hover:border-blue-500/40 transition-all flex items-center justify-center text-xs"
+                  title="Chỉnh sửa thông tin"
                 >
                   ✏️
                 </button>
-                {/* Delete */}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
                     onDelete(student.id, student.full_name);
                   }}
-                  className="w-7 h-7 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/25 hover:border-red-500/40 transition-all flex items-center justify-center text-xs cursor-pointer"
+                  className="w-7 h-7 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/25 hover:border-red-500/40 transition-all flex items-center justify-center text-xs"
                   title="Xóa"
                 >
                   🗑
@@ -378,14 +375,13 @@ function StudentRow({
                 e.stopPropagation();
                 onShowQR(student.id);
               }}
-              className="w-7 h-7 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-400
-                hover:bg-purple-500/25 transition-all flex items-center justify-center text-xs cursor-pointer"
+              className="w-7 h-7 rounded-lg bg-purple-500/10 border border-purple-500/20 text-purple-400 hover:bg-purple-500/25 transition-all flex items-center justify-center text-xs"
               title="Lấy lại QR"
             >
               📱
             </button>
             <span
-              className={`text-white/30 text-xs transition-transform inline-block cursor-pointer ${expanded ? "rotate-180" : ""}`}
+              className={`text-white/30 text-xs transition-transform inline-block cursor-pointer select-none ${expanded ? "rotate-180" : ""}`}
               onClick={() => setExpanded(!expanded)}
             >
               ▼
@@ -394,50 +390,97 @@ function StudentRow({
         </td>
       </tr>
 
+      {/* ── Expanded: lịch sử điểm danh ── */}
       {expanded && (
         <tr>
           <td colSpan={7} className="px-4 py-4 bg-white/2">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {student.recent_checkins.map((c, i) => (
-                <div key={i} className="rounded-xl bg-white/5 p-3">
-                  <p className="text-white/60 text-xs mb-2">
-                    📅{" "}
-                    {new Date(c.date).toLocaleDateString("vi-VN", {
-                      weekday: "long",
-                      day: "2-digit",
-                      month: "2-digit",
-                      timeZone: "Asia/Ho_Chi_Minh",
-                    })}
-                    {c.created_at && (
-                      <span className="ml-1.5 text-white/30">
-                        {new Date(c.created_at).toLocaleTimeString("vi-VN", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                          timeZone: "Asia/Ho_Chi_Minh",
-                        })}
-                      </span>
-                    )}
-                    <span className="ml-2 font-bold text-amber-400">
-                      +{c.point} điểm
-                    </span>
-                  </p>
-                  <div className="flex flex-wrap gap-1.5">
-                    {c.activities.map((a, j) => (
-                      <span
-                        key={j}
-                        className="text-xs px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300"
-                      >
-                        {a.name} +{a.point}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              ))}
               {student.recent_checkins.length === 0 && (
                 <p className="text-white/30 text-sm col-span-2">
                   Chưa có lịch sử điểm danh
                 </p>
               )}
+              {student.recent_checkins.map((c, i) => (
+                <div
+                  key={i}
+                  className="rounded-xl bg-white/5 border border-white/8 p-3"
+                >
+                  {/* Card header: ngày + nút sửa điểm */}
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div>
+                      <p className="text-white/50 text-xs">
+                        📅{" "}
+                        {new Date(c.date).toLocaleDateString("vi-VN", {
+                          weekday: "long",
+                          day: "2-digit",
+                          month: "2-digit",
+                          timeZone: "Asia/Ho_Chi_Minh",
+                        })}
+                        {c.created_at && (
+                          <span className="ml-1.5 text-white/30">
+                            {new Date(c.created_at).toLocaleTimeString(
+                              "vi-VN",
+                              {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                                timeZone: "Asia/Ho_Chi_Minh",
+                              },
+                            )}
+                          </span>
+                        )}
+                      </p>
+                      {/* Điểm + label */}
+                      <p
+                        className={`text-sm font-black mt-0.5 ${
+                          c.point === 5 ? "text-emerald-400"
+                          : c.point === 2 ? "text-amber-400"
+                          : "text-red-400"
+                        }`}
+                      >
+                        +{c.point} điểm
+                        <span className="text-white/30 font-normal text-xs ml-1.5">
+                          {c.point === 5 ?
+                            "Đúng giờ"
+                          : c.point === 2 ?
+                            "Trễ nhẹ"
+                          : "Trễ"}
+                        </span>
+                      </p>
+                    </div>
+
+                    {/* Nút sửa điểm — góc trên phải của card */}
+                    {canEdit && (
+                      <button
+                        onClick={() =>
+                          onEditPoint({
+                            checkin_id: c.checkin_id,
+                            date: c.date,
+                            point: c.point,
+                            student_name: student.full_name,
+                          })
+                        }
+                        className="shrink-0 text-[10px] px-2.5 py-1 rounded-full bg-blue-500/15 border border-blue-500/25 text-blue-400 hover:bg-blue-500/30 hover:border-blue-500/50 transition-all whitespace-nowrap"
+                      >
+                        Sửa điểm
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Activities */}
+                  {c.activities.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {c.activities.map((a, j) => (
+                        <span
+                          key={j}
+                          className="text-xs px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300"
+                        >
+                          {a.name} +{a.point}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
             {student.phone && (
               <p className="mt-3 text-white/40 text-xs">📞 {student.phone}</p>
@@ -449,14 +492,36 @@ function StudentRow({
   );
 }
 
-// ============================================================
-// Main Page
-// ============================================================
+// ── StatCard ─────────────────────────────────────────────────
+function StatCard({
+  label,
+  value,
+  unit,
+  color = "text-white",
+}: {
+  label: string;
+  value: number;
+  unit: string;
+  color?: string;
+}) {
+  return (
+    <div className="text-center">
+      <p className="text-white/40 text-xs mb-1">{label}</p>
+      <p className={`text-2xl font-black ${color}`}>
+        {value.toLocaleString()}
+        <span className="text-sm font-normal ml-0.5">{unit}</span>
+      </p>
+    </div>
+  );
+}
+
+// ── Main Page ────────────────────────────────────────────────
 export default function ClassDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { user } = useAuth();
   const className = decodeURIComponent(params.class_name as string);
+  const { exportClass, exporting } = useExportExcel();
 
   const [classData, setClassData] = useState<ClassDetail | null>(null);
   const [students, setStudents] = useState<Student[]>([]);
@@ -467,7 +532,6 @@ export default function ClassDetailPage() {
   const [qrTarget, setQrTarget] = useState<{ id: string; name: string } | null>(
     null,
   );
-
   const [editTarget, setEditTarget] = useState<Student | null>(null);
   const [editLoading, setEditLoading] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{
@@ -475,13 +539,23 @@ export default function ClassDetailPage() {
     name: string;
   } | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+
+  // EditPointModal state — quản lý ở đây, truyền callback xuống StudentRow
+  const [editPointTarget, setEditPointTarget] =
+    useState<EditPointTarget | null>(null);
+
   const [toast, setToast] = useState<{
     msg: string;
     type: "success" | "error";
   } | null>(null);
 
-  // SUPER_ADMIN và TRUONG_LOP mới có nút edit/delete
-  const canEdit = user?.role === "SUPER_ADMIN" || user?.role === "TRUONG_LOP";
+  const canEdit = [
+    "SUPER_ADMIN",
+    "XU_DOAN_TRUONG",
+    "XU_DOAN_PHO",
+    "TRUONG_TRUC",
+    "TRUONG_LOP",
+  ].includes(user?.role ?? "");
 
   const showToast = (msg: string, type: "success" | "error") => {
     setToast({ msg, type });
@@ -509,10 +583,10 @@ export default function ClassDetailPage() {
     setEditLoading(true);
     try {
       const res = await api.patch(`/students/${editTarget.id}`, data);
-      const updated = res.data.data;
-      // Cập nhật state local
       setStudents((prev) =>
-        prev.map((s) => (s.id === editTarget.id ? { ...s, ...updated } : s)),
+        prev.map((s) =>
+          s.id === editTarget.id ? { ...s, ...res.data.data } : s,
+        ),
       );
       showToast("Cập nhật thành công!", "success");
       setEditTarget(null);
@@ -569,7 +643,7 @@ export default function ClassDetailPage() {
             </div>
           )}
 
-          {/* QR Modal */}
+          {/* Modals */}
           {qrTarget && (
             <QRModal
               studentId={qrTarget.id}
@@ -577,7 +651,49 @@ export default function ClassDetailPage() {
             />
           )}
 
-          {/* Edit modal */}
+          {editPointTarget && (
+            <EditPointModal
+              checkin={editPointTarget}
+              onSaved={(checkinId, newPoint) => {
+                const oldPoint = editPointTarget!.point;
+                const pointDiff = newPoint - oldPoint;
+
+                setStudents((prev) =>
+                  prev.map((s) => {
+                    // Tìm student có checkin này
+                    const hasCheckin = s.recent_checkins.some(
+                      (c) => c.checkin_id === checkinId,
+                    );
+                    if (!hasCheckin) return s;
+
+                    // Cập nhật recent_checkins + total_points trên thanh
+                    const updatedCheckins = s.recent_checkins.map((c) =>
+                      c.checkin_id === checkinId ?
+                        { ...c, point: newPoint }
+                      : c,
+                    );
+                    return {
+                      ...s,
+                      recent_checkins: updatedCheckins,
+                      total_points: s.total_points + pointDiff,
+                    };
+                  }),
+                );
+
+                // Cập nhật tổng điểm của lớp
+                setClassData((prev) =>
+                  prev ?
+                    { ...prev, total_points: prev.total_points + pointDiff }
+                  : prev,
+                );
+
+                showToast("Đã cập nhật điểm!", "success");
+                setEditPointTarget(null);
+              }}
+              onCancel={() => setEditPointTarget(null)}
+            />
+          )}
+
           {editTarget && (
             <EditModal
               student={editTarget}
@@ -587,7 +703,6 @@ export default function ClassDetailPage() {
             />
           )}
 
-          {/* Delete modal */}
           {deleteTarget && (
             <DeleteModal
               name={deleteTarget.name}
@@ -597,6 +712,7 @@ export default function ClassDetailPage() {
             />
           )}
 
+          {/* Back */}
           <button
             onClick={() => router.back()}
             className="flex items-center gap-2 text-white/40 hover:text-white text-sm mb-6 transition-colors"
@@ -609,6 +725,7 @@ export default function ClassDetailPage() {
               <div className="w-10 h-10 border-4 border-blue-500/40 border-t-blue-500 rounded-full animate-spin" />
             </div>
           : <>
+              {/* Class header */}
               {classData && (
                 <div className="rounded-2xl bg-linear-to-br from-blue-500/10 to-indigo-600/5 border border-blue-500/20 p-6 mb-6">
                   <div className="flex flex-wrap items-start justify-between gap-4">
@@ -648,6 +765,7 @@ export default function ClassDetailPage() {
                 </div>
               )}
 
+              {/* Toolbar */}
               <div className="flex flex-wrap gap-3 mb-4">
                 <input
                   value={search}
@@ -655,20 +773,44 @@ export default function ClassDetailPage() {
                   placeholder="🔍 Tìm tên, tên thánh, ID..."
                   className="flex-1 min-w-48 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white placeholder-white/30 outline-none focus:border-blue-500/50 text-sm"
                 />
+                <button
+                  onClick={async () => {
+                    try {
+                      await exportClass(className);
+                    } catch (e: any) {
+                      showToast(e.message, "error");
+                    }
+                  }}
+                  disabled
+                  // disabled ={exporting}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-semibold hover:bg-emerald-500/20 transition-all disabled:opacity-50"
+                >
+                  {exporting ?
+                    <span className="w-3 h-3 border-2 border-emerald-400/30 border-t-emerald-400 rounded-full animate-spin" />
+                  : "📥"}
+                  {exporting ? "Đang xuất..." : "Xuất Excel"}
+                </button>
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as any)}
                   className="px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white/70 text-sm outline-none"
                 >
-                  <option value="rank">📊 Theo điểm</option>
-                  <option value="checkins">📅 Theo buổi</option>
-                  <option value="name">🔤 Theo tên</option>
+                  <option value="rank" className="text-black">
+                    📊 Theo điểm
+                  </option>
+                  <option value="checkins" className="text-black">
+                    📅 Theo buổi
+                  </option>
+                  <option value="name" className="text-black">
+                    🔤 Theo tên
+                  </option>
                 </select>
                 <span className="self-center text-white/30 text-sm">
                   {filtered.length} / {students.length} học sinh
                 </span>
               </div>
 
+              {/* Table */}
               <div
                 className="rounded-2xl overflow-hidden border border-white/8"
                 style={{ background: "rgba(255,255,255,0.02)" }}
@@ -695,7 +837,7 @@ export default function ClassDetailPage() {
                         <th className="px-4 py-3 text-center text-xs font-semibold text-white/30 uppercase">
                           5 buổi gần nhất
                         </th>
-                        <th className="px-3 py-3 w-24 text-right text-xs font-semibold text-white/30 uppercase">
+                        <th className="px-3 py-3 text-right text-xs font-semibold text-white/30 uppercase">
                           {canEdit ? "Thao tác" : ""}
                         </th>
                       </tr>
@@ -711,6 +853,7 @@ export default function ClassDetailPage() {
                           onShowQR={(id) =>
                             setQrTarget({ id, name: student.full_name })
                           }
+                          onEditPoint={setEditPointTarget}
                         />
                       ))}
                     </tbody>
@@ -728,27 +871,5 @@ export default function ClassDetailPage() {
         </div>
       </div>
     </ProtectedRoute>
-  );
-}
-
-function StatCard({
-  label,
-  value,
-  unit,
-  color = "text-white",
-}: {
-  label: string;
-  value: number;
-  unit: string;
-  color?: string;
-}) {
-  return (
-    <div className="text-center">
-      <p className="text-white/40 text-xs mb-1">{label}</p>
-      <p className={`text-2xl font-black ${color}`}>
-        {value.toLocaleString()}
-        <span className="text-sm font-normal ml-0.5">{unit}</span>
-      </p>
-    </div>
   );
 }
