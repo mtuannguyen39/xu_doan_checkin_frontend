@@ -114,7 +114,7 @@ function EditModal({ student, onSave, onCancel, loading }: {
             </div>
             <button onClick={() => setForm({ ...form, is_active: !form.is_active })}
               className={`relative w-11 h-6 rounded-full transition-colors ${form.is_active ? "bg-emerald-500" : "bg-white/20"}`}>
-              <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${form.is_active ? "-translate-x-5" : "translate-x"}`} />
+              <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${form.is_active ? "translate-x" : "-translate-x-5"}`} />
             </button>
           </div>
         </div>
